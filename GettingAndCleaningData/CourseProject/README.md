@@ -1,4 +1,4 @@
-This is a repository containing the required files for the "Getting and Cleaning Data Course Project".
+# Final Course Project
 
 ## Files
 
