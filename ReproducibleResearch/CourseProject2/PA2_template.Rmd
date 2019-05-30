@@ -1,0 +1,108 @@
+---
+title: 'Reproducible Research: Analyzing consequences of severe weather events'
+output: 
+  html_document:
+    keep_md: true
+---
+
+
+This is my submission for the second course project of the Coursera-course Reproducible Research. The aim of this project is to use the NOOA storm database to answer the following questions:
+
+1. Across the United States, which types of events (as indicated in the \color{red}{\verb|EVTYPE|}EVTYPE variable) are most harmful with respect to population health?
+2. Across the United States, which types of events have the greatest economic consequences?
+
+The document is structured as follows: the Data Processing section will explain how the data was loaded into R and processed for analysis. The Results section will present relevant plots and answers to the questions above.
+
+## Data Processing
+
+Let us start by downloading the source data.
+
+```{r}
+destfile <- "storm_data.csv.bz2"
+if (!file.exists(destfile)) {
+    url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(url, destfile = destfile, method="curl")   
+}
+```
+
+The next step is to read the data into R.
+
+```{r, cache=TRUE}
+df <- read.csv(destfile)
+```
+
+In order to answer question 1, we are going to need the total amount of fatalities and injuries per type. The new data frames are sorted in descending order to make it easier to see what types are the most harmful.
+
+```{r}
+fatalities_per_type <- aggregate(df$FATALITIES, by=list(EVTYPE=df$EVTYPE), FUN=sum)
+fatalities_per_type <- fatalities_per_type[order(-fatalities_per_type$x),]
+injuries_per_type <- aggregate(df$INJURIES, by=list(EVTYPE=df$EVTYPE), FUN=sum)
+injuries_per_type <- injuries_per_type[order(-injuries_per_type$x),]
+```
+
+We will also need to do some processing to answer question 2. The economic damage columns in the dataset is split into amount and magnitude. The amount columns are "PROPDMG" and "CROPDMG". The corresponding magnitude columns are "PROPDMGEXP" and "CROPDMGEXP". The magnitude columns contain characters that signifies the magnitude of the corresponding amount in dollars. "K" is used for thousands, "M" for millions, and "B" for billions. For example, 25 in the property amount column and "K" in the property magnitude column means property damages of 25000$. We will create a combined column that contains the actual dollar amount to make economic damage comparisons easier.
+
+```{r, cache=TRUE}
+PROPDMGCOMB <- numeric(nrow(df))
+CROPDMGCOMB <- numeric(nrow(df))
+for (i in 1:nrow(df)) {
+    # Compute property damage
+    if (df$PROPDMGEXP[i] == "K") {
+        PROPDMGCOMB[i] <- df$PROPDMG[i] * 1000
+    } else if (df$PROPDMGEXP[i] == "M") {
+        PROPDMGCOMB[i] <- df$PROPDMG[i] * 1000000
+    } else if (df$PROPDMGEXP[i] == "B") {
+        PROPDMGCOMB[i] <- df$PROPDMG[i] * 1000000000
+    }
+    
+    # Compute crop damage
+    if (df$CROPDMGEXP[i] == "K") {
+        CROPDMGCOMB[i] <- df$CROPDMG[i] * 1000
+    } else if (df$CROPDMGEXP[i] == "M") {
+        CROPDMGCOMB[i] <- df$CROPDMG[i] * 1000000
+    } else if (df$CROPDMGEXP[i] == "B") {
+        CROPDMGCOMB[i] <- df$CROPDMG[i] * 1000000000
+    }
+}
+df$PROPDMGCOMB <- PROPDMGCOMB
+df$CROPDMGCOMB <- CROPDMGCOMB
+```
+
+Since we are interested in total economic damage per type, let us create a column that adds the two types of damage together.
+
+```{r, cache=TRUE}
+df$TOTALDMG <- df$PROPDMGCOMB + df$CROPDMGCOMB
+```
+
+Similarily to the processing we did for question 1, we can now compute the total amount of economic damage per type. Once again we sort the new data frame in descending order.
+
+```{r, cache=TRUE}
+damage_per_type <- aggregate(df$TOTALDMG, by=list(EVTYPE=df$EVTYPE), FUN=sum)
+damage_per_type <- damage_per_type[order(-damage_per_type$x),]
+```
+
+## Results
+
+1. Across the United States, which types of events (as indicated in the \color{red}{\verb|EVTYPE|}EVTYPE variable) are most harmful with respect to population health?
+
+Let us plot the 5 biggest causes of fatalities and the 5 biggest causes of injuries.
+
+```{r}
+barplot(fatalities_per_type[1:5, "x"], names.arg=fatalities_per_type[1:5, "EVTYPE"], xlab="Event type",
+        ylab="Fatalities", cex.names=0.7, main="Types of events that cause the most fatalities")
+barplot(injuries_per_type[1:5, "x"], names.arg=injuries_per_type[1:5, "EVTYPE"], xlab="Event type",
+        ylab="Injuries", cex.names=0.7, main="Types of events that cause the most injuries")
+```
+
+Tornados are the biggest cause of both injuries and fatalities, thus we can conclude that they are the most harmful with respect to population health.
+
+2. Across the United States, which types of events have the greatest economic consequences?
+
+Let us plot the 5 biggest causes of economic damage.
+
+```{r}
+barplot(damage_per_type[1:5, "x"], names.arg=damage_per_type[1:5, "EVTYPE"], xlab="Event type",
+        ylab="Economic damage", cex.names=0.7, main="Types of events that cause the most economic damage")
+```
+
+We can see that floods have the greatest economic consequences.
