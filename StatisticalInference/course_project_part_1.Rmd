@@ -1,0 +1,88 @@
+---
+title: 'Statistical Inference: Exploring the Exponential Distribution'
+output: html_document
+author: Carl Fredriksson
+---
+
+## Overview
+
+In this part of the project we will do some simulations. The aim of the simulations are to investigate the exponential distribution and compare it with the Central Limit Theorem.
+
+### Simulations
+
+Let us start by defining some constants and setting the seed so the simulations can be replicated.
+
+```{r}
+lambda = 0.2
+n = 40
+num_simulations = 1000
+set.seed(1)
+```
+
+We can now run simulations of sampling from the exponential distribution and taking the mean for each sample.
+
+```{r}
+sample_means = NULL
+for (i in 1 : num_simulations) sample_means = c(sample_means, mean(rexp(n, lambda)))
+head(sample_means)
+```
+
+Let us also simulate a large collection of random exponentials.
+
+```{r}
+exponentials = NULL
+for (i in 1 : num_simulations) exponentials = c(exponentials, rexp(n, lambda))
+head(exponentials)
+```
+
+### Sample Mean versus Theoretical Mean
+
+Let us compute the theoretical mean and the sample mean.
+
+```{r}
+m_p <- 1 / lambda
+m_s <- mean(sample_means)
+```
+
+When we compare them we see that they are very similar.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+library(knitr)
+library(kableExtra)
+library(dplyr)
+df <- data.frame("Theoretical"=m_p, "Sample"=m_s)
+kable(df) %>%
+    kable_styling(full_width = F, position = "left")
+```
+
+### Sample Variance versus Theoretical Variance
+
+Let us compute the theoretical variance and the sample variance.
+
+```{r}
+v_p <- (1 / lambda)^2/n
+v_s <- sd(sample_means)^2
+```
+
+As with the means, when we compare the variances we see that they are very similar.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+library(knitr)
+library(kableExtra)
+library(dplyr)
+df <- data.frame("Theoretical"=v_p, "Sample"=v_s)
+kable(df) %>%
+    kable_styling(full_width = F, position = "left")
+```
+
+### Distribution
+
+Lets compare the sample means we simulated to the simulated exponentials.
+
+```{r}
+par(mfrow=c(1, 2))
+hist(sample_means, main="Sample means", xlab="Mean")
+hist(exponentials, main="Exponentials", xlab="Value")
+```
+
+We can see that the sample means are approximately normally distributed, even though the underlying exponential distribution is skewed to the right. This is because of the Central Limit Theorem.

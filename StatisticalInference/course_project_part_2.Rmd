@@ -1,0 +1,55 @@
+---
+title: 'Statistical Inference: Analyzing ToothGrowth Data'
+author: "Carl Fredriksson"
+output: html_document
+---
+
+## Overview
+
+In this part of the project we will analyze the ToothGrowth data from the R datasets package.
+
+## Load the ToothGrowth data
+
+```{r}
+library(datasets)
+df <- datasets::ToothGrowth
+nrow(df)
+names(df)
+sapply(df, class)
+levels(df$supp)
+unique(df$dose)
+```
+
+The dataset is about the effect of vitamin C on tooth growth in guinea pigs. There are `r nrow(df)` observations of three variables: `r names(df)`.
+
+## Basic summary and data exploration
+
+"len" is a numeric variable that describes tooth length. "len" takes values between `r min(df$len)` and `r max(df$len)`. "supp" is a factor that describes what supplement the guinea pig received. "supp" has two levels: `r levels(df$supp)`. "OJ" means orange juice, "VC" means ascorbic acid. "dose" is a numeric variable that describes the dose of the supplement in milligrams/day. In the dataset "dose" takes the values: `r unique(df$dose)`. Each guinea pig received one of the doses of one of the supplements.
+
+```{r}
+summary(df)
+```
+
+```{r}
+oj <- subset(df, supp=="OJ")
+vc <- subset(df, supp=="VC")
+par(mfrow=c(1, 2))
+hist(oj$len)
+hist(vc$len)
+```
+
+## Hypothesis testing
+
+I think that "OJ" is a more effective supplement than "VC". To verify this idea I am going to do a hypothesis test where the null hypothesis is that there is no difference between the supplements and the alternative hypothesis is that tooth lengths from "OJ" are longer on average. I am going to use a significance level of $\alpha = 0.05$.
+
+$$
+H_0: \mu_{OJ} = \mu_{VC} \\
+H_a: \mu_{OJ} > \mu_{VC}
+$$
+```{r}
+t.test(oj$len, vc$len, alternative="greater")$p.value
+```
+
+## Conclusion
+
+Since the p-value is smaller than alpha ($p = 0.03031725 < \alpha = 0.05$) I conclude that "OJ" is a more effective supplement for guinea pig tooth growth. I assume that the observations are independent and identically distributed (iid). There are 30 observations for each supplement so that should be enough for the t-test. The data is also not very skewed so that should not be a problem for the t-test.
